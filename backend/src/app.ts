@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { mockAuth } from "@/middleware/auth";
+
+import orderRoutes from "@/routes/order.routes";
 
 
 const app = express();
@@ -29,6 +32,10 @@ app.get('/health', (req, res) => {
         uptime: process.uptime()
     });
 });
+
+app.use(mockAuth);
+
+app.use("/api", orderRoutes);
 
 
 export default app;

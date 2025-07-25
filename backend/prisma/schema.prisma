@@ -159,6 +159,7 @@ enum RiskEventType {
   TRADE
   LOGIN
   SUSPICIOUS_ACTIVITY
+  INSUFFICIENT_FUNDS
 
   @@map("risk_event_type")
 }

@@ -57,5 +57,9 @@
     "node_modules",
     "dist",
     "tests"
+  ],
+  "typeRoots": [
+    "./node_modules/@types",
+    "./src/types"
   ]
 }

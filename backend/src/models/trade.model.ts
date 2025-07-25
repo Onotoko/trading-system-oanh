@@ -1,27 +1,37 @@
-import { prisma } from "@/config";
-import { Trade } from "@prisma/client";
-import { CreateTradeInput } from "@/types/trade";
+import { PrismaClient, Prisma } from "@prisma/client";
+const prisma = new PrismaClient();
 
 export const TradeModel = {
-    create: (data: CreateTradeInput): Promise<Trade> => {
-        return prisma.trade.create({ data });
-    },
-
-    findByOrder: (orderId: bigint): Promise<Trade[]> => {
-        return prisma.trade.findMany({
-            where: {
-                OR: [
-                    { buyerOrderId: orderId },
-                    { sellerOrderId: orderId }
-                ]
+    create(data: {
+        symbol: string;
+        buyerOrderId: bigint;
+        sellerOrderId: bigint;
+        buyerUserId: bigint;
+        sellerUserId: bigint;
+        quantity: number;
+        price: number;
+        buyerFee: number;
+        sellerFee: number;
+    }) {
+        return prisma.trade.create({
+            data: {
+                symbol: data.symbol,
+                buyerOrderId: data.buyerOrderId,
+                sellerOrderId: data.sellerOrderId,
+                buyerUserId: data.buyerUserId,
+                sellerUserId: data.sellerUserId,
+                quantity: new Prisma.Decimal(data.quantity),
+                price: new Prisma.Decimal(data.price),
+                buyerFee: new Prisma.Decimal(data.buyerFee),
+                sellerFee: new Prisma.Decimal(data.sellerFee)
             }
         });
     },
-
-    findByUser: (userId: bigint): Promise<Trade[]> => {
+    getBySymbol(symbol: string, limit = 100) {
         return prisma.trade.findMany({
-            where: { OR: [{ buyerUserId: userId }, { sellerUserId: userId }] },
+            where: { symbol },
             orderBy: { executedAt: "desc" },
+            take: limit
         });
-    },
+    }
 };

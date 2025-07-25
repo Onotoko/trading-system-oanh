@@ -1,9 +1,9 @@
-import { RiskEventSeverity, RiskEventType, Prisma } from "@prisma/client";
+import { RiskEventType, RiskEventSeverity } from "@prisma/client";
 
-export interface LogRiskEventInput {
+export interface CreateRiskEventInput {
     userId: bigint;
     eventType: RiskEventType;
     severity: RiskEventSeverity;
     description?: string;
-    metadata?: Prisma.InputJsonValue;
+    metadata?: any;
 }
