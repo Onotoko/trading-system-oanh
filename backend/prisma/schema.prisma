@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           BigInt      @id @default(autoincrement())
+  email        String      @unique @db.VarChar(255)
+  username     String?     @unique @db.VarChar(50)
+  passwordHash String      @map("password_hash") @db.VarChar(255)
+  kycStatus    KycStatus   @default(PENDING) @map("kyc_status")
+  feeTier      Int         @default(1) @map("fee_tier")
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  orders     Order[]
+  balances   Balance[]
+  riskEvents RiskEvent[]
+  buyTrades  Trade[]     @relation("BuyerTrades")
+  sellTrades Trade[]     @relation("SellerTrades")
+
+  @@map("users")
+}
+
+model Order {
+  id               BigInt      @id @default(autoincrement())
+  userId           BigInt      @map("user_id")
+  symbol           String      @db.VarChar(20)
+  side             OrderSide
+  type             OrderType
+  quantity         Decimal     @db.Decimal(20, 8)
+  price            Decimal?    @db.Decimal(20, 8)
+  filledQuantity   Decimal     @default(0) @map("filled_quantity") @db.Decimal(20, 8)
+  status           OrderStatus @default(PENDING)
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  user       User    @relation(fields: [userId], references: [id])
+  buyTrades  Trade[] @relation("BuyerOrderTrades")
+  sellTrades Trade[] @relation("SellerOrderTrades")
+
+  // Indexes
+  @@index([symbol, status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([symbol, side, price], map: "idx_orders_symbol_side_price")
+  @@map("orders")
+}
+
+model Trade {
+  id            BigInt   @id @default(autoincrement())
+  symbol        String   @db.VarChar(20)
+  buyerOrderId  BigInt   @map("buyer_order_id")
+  sellerOrderId BigInt   @map("seller_order_id")
+  buyerUserId   BigInt   @map("buyer_user_id")
+  sellerUserId  BigInt   @map("seller_user_id")
+  quantity      Decimal  @db.Decimal(20, 8)
+  price         Decimal  @db.Decimal(20, 8)
+  buyerFee      Decimal  @map("buyer_fee") @db.Decimal(20, 8)
+  sellerFee     Decimal  @map("seller_fee") @db.Decimal(20, 8)
+  executedAt    DateTime @default(now()) @map("executed_at") @db.Timestamptz(6)
+
+  // Relations
+  buyerOrder  Order @relation("BuyerOrderTrades", fields: [buyerOrderId], references: [id])
+  sellerOrder Order @relation("SellerOrderTrades", fields: [sellerOrderId], references: [id])
+  buyer       User  @relation("BuyerTrades", fields: [buyerUserId], references: [id])
+  seller      User  @relation("SellerTrades", fields: [sellerUserId], references: [id])
+
+  // Indexes
+  @@index([symbol, executedAt(sort: Desc)])
+  @@index([buyerOrderId])
+  @@index([sellerOrderId])
+  @@index([buyerUserId])
+  @@index([sellerUserId])
+  @@map("trades")
+}
+
+model Balance {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  asset     String   @db.VarChar(20)
+  available Decimal  @default(0) @db.Decimal(20, 8)
+  locked    Decimal  @default(0) @db.Decimal(20, 8)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  // Indexes
+  @@unique([userId, asset])
+  @@index([userId])
+  @@index([asset])
+  @@map("balances")
+}
+
+model RiskEvent {
+  id          BigInt            @id @default(autoincrement())
+  userId      BigInt            @map("user_id")
+  eventType   RiskEventType     @map("event_type")
+  severity    RiskEventSeverity
+  description String?
+  metadata    Json?
+  resolved    Boolean           @default(false)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  // Indexes
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([eventType])
+  @@index([severity])
+  @@index([resolved], map: "idx_risk_events_unresolved")
+  @@map("risk_events")
+}
+
+// Enums
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("kyc_status")
+}
+
+enum OrderSide {
+  BUY
+  SELL
+
+  @@map("order_side")
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+
+  @@map("order_type")
+}
+
+enum OrderStatus {
+  PENDING
+  PARTIAL
+  FILLED
+  CANCELLED
+
+  @@map("order_status")
+}
+
+enum RiskEventType {
+  WITHDRAWAL
+  DEPOSIT
+  TRADE
+  LOGIN
+  SUSPICIOUS_ACTIVITY
+
+  @@map("risk_event_type")
+}
+
+enum RiskEventSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@map("risk_event_severity")
+}
