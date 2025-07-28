@@ -1,26 +1,13 @@
-const path = require("path");
-
 module.exports = {
-    preset: "ts-jest",
-    testEnvironment: "node",
-    rootDir: "./",
-    testMatch: [
-        "**/tests/**/*.test.ts",
-        "**/tests/**/*.spec.ts"
-    ],
-    moduleNameMapper: {
-        "^@/(.*)$": "<rootDir>/src/$1"
-    },
-    modulePaths: [path.resolve(__dirname, "src")],
-    setupFilesAfterEnv: [],
+    preset: 'ts-jest',
+    testEnvironment: 'node',
+    setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+    testMatch: ['**/__tests__/**/*.test.ts'],
     collectCoverageFrom: [
-        "src/**/*.{ts,js}",
-        "!src/**/*.d.ts",
-        "!src/**/*.test.{ts,js}",
-        "!src/**/*.spec.{ts,js}"
+        'src/services/**/*.ts',
+        '!src/services/**/*.d.ts',
     ],
-    transform: {
-        "^.+\\.ts$": "ts-jest"
+    moduleNameMapping: {
+        '^@/(.*)$': '<rootDir>/src/$1',
     },
-    moduleFileExtensions: ["ts", "js", "json", "node"]
 };
