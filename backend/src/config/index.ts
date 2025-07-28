@@ -10,7 +10,6 @@ const redis = new Redis(getEnv('REDIS_URL'), {
     enableReadyCheck: false,
 });
 
-export { prisma, redis };
 
 const config = {
     port: parseInt(getEnv('PORT', '8080'), 10),
@@ -47,6 +46,9 @@ const config = {
         level: getEnv('LOG_LEVEL'),
         file: getEnv('LOG_FILE')
     },
+    frontend: {
+        url: getEnv("FRONTEND_URL")
+    }
 };
 
-module.exports = { config, prisma, redis };
+export { prisma, redis, config };

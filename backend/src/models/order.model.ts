@@ -10,28 +10,38 @@ export const OrderModel = {
         quantity: number;
         price?: number;
     }) {
-        return prisma.order.create({ data });
+        return prisma.order.create({
+            data: {
+                ...data,
+                filledQuantity: 0,
+                status: OrderStatus.PENDING
+            }
+        });
     },
 
-    findByUser(userId: bigint) {
+    findByUser(userId: bigint, limit = 50) {
         return prisma.order.findMany({
             where: { userId },
-            orderBy: { createdAt: "desc" }
+            orderBy: { createdAt: "desc" },
+            take: limit
         });
     },
 
     findById(orderId: bigint) {
         return prisma.order.findUnique({ where: { id: orderId } });
     },
+
     cancel(orderId: bigint) {
         return prisma.order.update({
             where: { id: orderId },
-            data: { status: OrderStatus.CANCELLED }
+            data: {
+                status: OrderStatus.CANCELLED,
+                updatedAt: new Date()
+            }
         });
     },
 
-    getMatchingOrders(symbol: string, side: OrderSide) {
-        // Lấy order có trạng thái PENDING hoặc PARTIAL
+    getMatchingOrders(symbol: string, side: OrderSide, limit = 100) {
         return prisma.order.findMany({
             where: {
                 symbol,
@@ -41,7 +51,8 @@ export const OrderModel = {
             orderBy: [
                 { price: side === "BUY" ? "desc" : "asc" },
                 { createdAt: "asc" }
-            ]
+            ],
+            take: limit
         });
     },
 
@@ -49,7 +60,8 @@ export const OrderModel = {
         return prisma.order.update({
             where: { id: orderId },
             data: {
-                filledQuantity: { increment: quantity }
+                filledQuantity: { increment: quantity },
+                updatedAt: new Date()
             }
         });
     },
@@ -57,7 +69,35 @@ export const OrderModel = {
     updateStatus(orderId: bigint, status: OrderStatus) {
         return prisma.order.update({
             where: { id: orderId },
-            data: { status }
+            data: {
+                status,
+                updatedAt: new Date()
+            }
+        });
+    },
+
+    // Get open orders for a user
+    getOpenOrders(userId: bigint) {
+        return prisma.order.findMany({
+            where: {
+                userId,
+                status: { in: [OrderStatus.PENDING, OrderStatus.PARTIAL] }
+            },
+            orderBy: { createdAt: "desc" }
+        });
+    },
+
+    // Get orders by symbol and status
+    getOrdersBySymbolAndStatus(symbol: string, status: OrderStatus[]) {
+        return prisma.order.findMany({
+            where: {
+                symbol,
+                status: { in: status }
+            },
+            orderBy: [
+                { price: "asc" },
+                { createdAt: "asc" }
+            ]
         });
     }
 };
